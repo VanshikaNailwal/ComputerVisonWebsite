@@ -1,0 +1,21 @@
+fastapi
+uvicorn
+sqlalchemy
+psycopg2-binary
+
+pydantic-settings
+python-dotenv
+
+python-jose
+passlib
+bcrypt
+
+opencv-python
+torch
+torchvision
+ultralytics
+
+python-multipart
+
+# gunicorn
+# alembic

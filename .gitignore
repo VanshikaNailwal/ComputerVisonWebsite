@@ -1,0 +1,75 @@
+# =====================
+# ENV / SECRETS
+# =====================
+.env
+*.env
+backend/.env
+frontend/.env
+
+
+# =====================
+# PYTHON
+# =====================
+venv/
+env/
+backend/venv/
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+
+# =====================
+# NODE / REACT
+# =====================
+node_modules/
+frontend/node_modules/
+
+frontend/dist/
+frontend/build/
+
+
+
+
+
+
+
+
+# =====================
+# VIDEOS
+# =====================
+*.mp4
+*.avi
+*.mkv
+*.mov
+
+
+# =====================
+# DATABASE
+# =====================
+*.db
+*.sqlite
+*.sqlite3
+
+
+# =====================
+# BUILDS / INSTALLERS
+# =====================
+dist/
+build/
+*.exe
+*.spec
+
+
+# =====================
+# IDE
+# =====================
+.vscode/
+.idea/
+
+
+# =====================
+# LOGS
+# =====================
+*.log

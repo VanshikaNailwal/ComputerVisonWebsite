@@ -1,0 +1,156 @@
+*{
+
+  margin:0;
+
+  padding:0;
+
+  box-sizing:border-box;
+
+}
+
+
+
+
+
+html,
+
+body,
+
+#root{
+
+
+  width:100%;
+
+
+  min-height:100%;
+
+
+}
+
+
+
+
+
+
+
+html{
+
+
+  overflow-y:auto;
+
+
+}
+
+
+
+
+
+
+
+
+body{
+
+
+  min-height:100vh;
+
+
+  overflow-x:hidden;
+
+
+  overflow-y:auto;
+
+
+  background:#0d0f12;
+
+
+
+  font-family:
+
+  Arial,
+
+  Helvetica,
+
+  sans-serif;
+
+
+}
+
+
+
+
+
+
+
+
+
+#root{
+
+
+  min-height:100vh;
+
+
+}
+
+
+
+
+
+
+
+
+
+/* Scrollbar Styling */
+
+
+::-webkit-scrollbar{
+
+
+  width:8px;
+
+
+}
+
+
+
+
+
+
+::-webkit-scrollbar-track{
+
+
+  background:#0d0f12;
+
+
+}
+
+
+
+
+
+
+
+::-webkit-scrollbar-thumb{
+
+
+  background:#334155;
+
+
+  border-radius:10px;
+
+
+}
+
+
+
+
+
+
+
+
+::-webkit-scrollbar-thumb:hover{
+
+
+  background:#475569;
+
+
+}
