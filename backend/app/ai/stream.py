@@ -1,8 +1,8 @@
+import os
+
 import cv2
 
-
 import time
-
 
 import logging
 
@@ -10,18 +10,14 @@ import logging
 
 from app.database import SessionLocal
 
-
 from app.cameras.models import Camera
-
 
 from app.ai.detector import detect_objects
 
-
 from app.events.service import create_event
 
-
-
 from app.core.config import settings
+
 
 
 
@@ -49,7 +45,7 @@ logger = logging.getLogger(
 
 
 # ----------------------------------
-# AI Settings From ENV
+# AI Settings
 # ----------------------------------
 
 FRAME_SKIP = settings.FRAME_SKIP
@@ -59,8 +55,6 @@ CONFIDENCE_THRESHOLD = settings.CONFIDENCE_THRESHOLD
 
 
 ALERT_COOLDOWN = settings.ALERT_COOLDOWN
-
-
 
 
 
@@ -84,7 +78,6 @@ def process_camera(
 ):
 
 
-
     db = SessionLocal()
 
 
@@ -94,10 +87,7 @@ def process_camera(
     frame_count = 0
 
 
-
     last_alert_time = {}
-
-
 
 
 
@@ -111,9 +101,9 @@ def process_camera(
 
 
 
-        # ----------------------------------
+        # ------------------------------
         # Load Camera
-        # ----------------------------------
+        # ------------------------------
 
         camera = (
 
@@ -123,16 +113,17 @@ def process_camera(
 
             )
 
+
             .filter(
 
                 Camera.id == camera_id
 
             )
 
+
             .first()
 
         )
-
 
 
 
@@ -163,11 +154,9 @@ def process_camera(
 
 
 
-
-
-        # ----------------------------------
-        # Load mapped models
-        # ----------------------------------
+        # ------------------------------
+        # Load Models
+        # ------------------------------
 
         mapped_models = [
 
@@ -184,10 +173,7 @@ def process_camera(
 
 
 
-
-
-
-        if len(mapped_models) == 0:
+        if not mapped_models:
 
 
             logger.warning(
@@ -208,14 +194,11 @@ def process_camera(
 
 
 
-
-
         logger.info(
 
             f"AI Started: {camera.name}"
 
         )
-
 
 
 
@@ -233,22 +216,78 @@ def process_camera(
 
 
 
+        # ------------------------------
+        # Prepare Model Paths ONCE
+        # ------------------------------
+
+        prepared_models = []
 
 
 
 
-        # ----------------------------------
+        for model in mapped_models:
+
+
+
+            filename = os.path.basename(
+
+                model.file_path
+
+            )
+
+
+
+            path = os.path.join(
+
+                settings.MODEL_PATH,
+
+                filename
+
+            )
+
+
+
+
+            logger.info(
+
+                f"Loading AI model: {path}"
+
+            )
+
+
+
+
+            prepared_models.append(
+
+                {
+
+                    "model": model,
+
+                    "path": path
+
+                }
+
+            )
+
+
+
+
+
+
+
+
+
+
+
+        # ------------------------------
         # Open Camera Stream
-        # ----------------------------------
+        # ------------------------------
 
         cap = cv2.VideoCapture(
 
             camera.rtsp_url
 
         )
-
-
-
 
 
 
@@ -278,8 +317,6 @@ def process_camera(
 
 
 
-
-
         failed_frames = 0
 
 
@@ -292,16 +329,11 @@ def process_camera(
 
 
 
-
-
-
-        # ----------------------------------
-        # Main Loop
-        # ----------------------------------
+        # ------------------------------
+        # Frame Loop
+        # ------------------------------
 
         while True:
-
-
 
 
 
@@ -317,9 +349,6 @@ def process_camera(
 
 
 
-
-
-            # Stop AI
 
             if stop_flags.get(
 
@@ -349,8 +378,6 @@ def process_camera(
 
 
 
-
-
             success, frame = cap.read()
 
 
@@ -361,29 +388,11 @@ def process_camera(
 
 
 
-
-
-
-
-            # ------------------------------
-            # Camera Failure
-            # ------------------------------
-
-            if (
-
-                not success
-
-                or
-
-                frame is None
-
-            ):
+            if not success or frame is None:
 
 
 
                 failed_frames += 1
-
-
 
 
 
@@ -403,12 +412,7 @@ def process_camera(
 
 
 
-
-
-
                 continue
-
-
 
 
 
@@ -422,7 +426,6 @@ def process_camera(
             failed_frames = 0
 
 
-
             frame_count += 1
 
 
@@ -433,10 +436,6 @@ def process_camera(
 
 
 
-
-            # ------------------------------
-            # Skip Frames
-            # ------------------------------
 
             if frame_count % FRAME_SKIP != 0:
 
@@ -453,15 +452,20 @@ def process_camera(
 
 
 
-
-
-
-
             # ------------------------------
-            # Run Models
+            # Detection
             # ------------------------------
 
-            for model in mapped_models:
+            for item in prepared_models:
+
+
+
+
+                model = item["model"]
+
+
+                model_path = item["path"]
+
 
 
 
@@ -472,11 +476,9 @@ def process_camera(
 
                     frame,
 
-
-                    model.file_path
+                    model_path
 
                 )
-
 
 
 
@@ -508,18 +510,11 @@ def process_camera(
 
 
 
-
-
-
-
                     key = (
 
                         f"{model.id}_{detection['label']}"
 
                     )
-
-
-
 
 
 
@@ -535,11 +530,7 @@ def process_camera(
 
 
 
-
-                    # duplicate alert cooldown
-
                     if key in last_alert_time:
-
 
 
                         if (
@@ -566,9 +557,6 @@ def process_camera(
 
 
 
-
-
-
                     last_alert_time[key] = current
 
 
@@ -580,10 +568,8 @@ def process_camera(
 
 
 
-
-
-
                     event = create_event(
+
 
                         db=db,
 
@@ -600,6 +586,7 @@ def process_camera(
                         frame=frame
 
                     )
+
 
 
 
@@ -631,17 +618,11 @@ def process_camera(
 
 
 
-
-
         logger.info(
 
             f"AI ended: {camera.name}"
 
         )
-
-
-
-
 
 
 
@@ -659,8 +640,6 @@ def process_camera(
             f"AI Stream Error: {e}"
 
         )
-
-
 
 
 

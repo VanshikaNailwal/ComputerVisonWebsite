@@ -20,10 +20,17 @@ import shutil
 from ultralytics import YOLO
 
 
+
 from app.database import get_db
 
 
 from app.ai_models.models import AIModel
+
+
+from app.events.models import Event
+
+
+from app.core.config import settings
 
 
 
@@ -52,19 +59,16 @@ router = APIRouter(
 
 
 # ----------------------------------
-# Model Storage Directory
+# Dynamic Model Directory
+#
+# Comes from:
+# storage_config.txt
+# selected during install
 # ----------------------------------
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+MODEL_DIR = Path(
 
-
-MODEL_DIR = (
-
-    BASE_DIR
-    /
-    "storage"
-    /
-    "models"
+    settings.MODEL_PATH
 
 )
 
@@ -77,6 +81,7 @@ MODEL_DIR.mkdir(
     exist_ok=True
 
 )
+
 
 
 
@@ -114,10 +119,11 @@ async def upload_model(
 
 
 
-    # only allow YOLO models
+    # ------------------------------
+    # Validate extension
+    # ------------------------------
 
     if not file.filename.endswith(".pt"):
-
 
 
         raise HTTPException(
@@ -136,20 +142,29 @@ async def upload_model(
 
 
 
+    # ------------------------------
+    # Duplicate check
+    # ------------------------------
 
-    # check duplicate model
+    existing = (
 
-    existing = db.query(
+        db.query(
 
-        AIModel
+            AIModel
 
-    ).filter(
-
-        AIModel.filename == file.filename
-
-    ).first()
+        )
 
 
+        .filter(
+
+            AIModel.filename == file.filename
+
+        )
+
+
+        .first()
+
+    )
 
 
 
@@ -157,7 +172,6 @@ async def upload_model(
 
 
     if existing:
-
 
 
         raise HTTPException(
@@ -176,13 +190,19 @@ async def upload_model(
 
 
 
+    # ------------------------------
+    # Save Model File
+    # ------------------------------
 
-    # save file
+    save_path = (
 
-    save_path = MODEL_DIR / file.filename
+        MODEL_DIR
 
+        /
 
+        file.filename
 
+    )
 
 
 
@@ -214,13 +234,11 @@ async def upload_model(
 
 
 
-
-
-
-    # create database entry
+    # ------------------------------
+    # Create DB Entry
+    # ------------------------------
 
     new_model = AIModel(
-
 
 
         name=name,
@@ -235,15 +253,16 @@ async def upload_model(
         filename=file.filename,
 
 
-        file_path=str(save_path),
+        # only store filename
+        # not absolute path
+
+        file_path=file.filename,
 
 
         status="CHECKING"
 
 
     )
-
-
 
 
 
@@ -258,9 +277,7 @@ async def upload_model(
     )
 
 
-
     db.commit()
-
 
 
     db.refresh(
@@ -278,14 +295,11 @@ async def upload_model(
 
 
 
-
-
-    # ----------------------------------
-    # YOLO Validation
-    # ----------------------------------
+    # ------------------------------
+    # Validate YOLO Model
+    # ------------------------------
 
     try:
-
 
 
         YOLO(
@@ -295,18 +309,12 @@ async def upload_model(
         )
 
 
-
-
-
         new_model.status = "READY"
 
 
 
 
-
-
     except Exception:
-
 
 
         new_model.status = "FAILED"
@@ -317,12 +325,7 @@ async def upload_model(
 
 
 
-
-
-
-
     db.commit()
-
 
 
     db.refresh(
@@ -330,9 +333,6 @@ async def upload_model(
         new_model
 
     )
-
-
-
 
 
 
@@ -384,10 +384,6 @@ async def upload_model(
 
 
 
-
-
-
-
 # ----------------------------------
 # Get All AI Models
 # ----------------------------------
@@ -396,22 +392,23 @@ async def upload_model(
 def get_models(
 
 
-
     db: Session = Depends(get_db)
 
 
 ):
 
 
+    models = (
 
+        db.query(
 
-    models = db.query(
+            AIModel
 
-        AIModel
+        )
 
-    ).all()
+        .all()
 
-
+    )
 
 
 
@@ -447,18 +444,13 @@ def get_models(
             "status": model.status
 
 
-
         }
-
 
 
         for model in models
 
 
     ]
-
-
-
 
 
 
@@ -480,7 +472,6 @@ def get_models(
 def delete_model(
 
 
-
     model_id: int,
 
 
@@ -492,17 +483,25 @@ def delete_model(
 
 
 
+    model = (
 
-    model = db.query(
+        db.query(
 
-        AIModel
+            AIModel
 
-    ).filter(
+        )
 
-        AIModel.id == model_id
 
-    ).first()
+        .filter(
 
+            AIModel.id == model_id
+
+        )
+
+
+        .first()
+
+    )
 
 
 
@@ -512,7 +511,6 @@ def delete_model(
 
 
     if not model:
-
 
 
         raise HTTPException(
@@ -530,13 +528,28 @@ def delete_model(
 
 
 
+    # ------------------------------
+    # Remove model references
+    # from existing alerts
+    #
+    # Keeps evidence history
+    # ------------------------------
 
+    db.query(
 
-    # delete physical .pt file
+        Event
 
-    file_path = Path(
+    ).filter(
 
-        model.file_path
+        Event.model_id == model.id
+
+    ).update(
+
+        {
+
+            Event.model_id: None
+
+        }
 
     )
 
@@ -546,8 +559,27 @@ def delete_model(
 
 
 
-    if file_path.exists():
 
+
+
+    # ------------------------------
+    # Delete physical .pt file
+    # ------------------------------
+
+    file_path = (
+
+        MODEL_DIR
+
+        /
+
+        model.filename
+
+    )
+
+
+
+
+    if file_path.exists():
 
 
         file_path.unlink()
@@ -561,15 +593,15 @@ def delete_model(
 
 
 
-
-    # delete database entry
+    # ------------------------------
+    # Delete database row
+    # ------------------------------
 
     db.delete(
 
         model
 
     )
-
 
 
     db.commit()

@@ -19,7 +19,6 @@ DialogTitle,
 DialogContent,
 DialogActions,
 Button,
-Grid,
 TextField,
 Divider,
 TablePagination
@@ -57,10 +56,7 @@ updateEventStatus
 function Alerts(){
 
 
-
 const {user}=useAuth();
-
-
 
 
 
@@ -75,7 +71,6 @@ user?.permissions?.includes(
 "manage_alerts"
 
 );
-
 
 
 
@@ -105,31 +100,6 @@ const [selectedAlert,setSelectedAlert]=useState(null);
 const [newStatus,setNewStatus]=useState("");
 
 const [note,setNote]=useState("");
-
-
-
-
-
-
-
-
-const [filters,setFilters]=useState({
-
-camera:"ALL",
-
-model:"ALL",
-
-status:"ALL",
-
-fromDate:"",
-
-toDate:"",
-
-fromTime:"",
-
-toTime:""
-
-});
 
 
 
@@ -228,8 +198,6 @@ return ()=>clearInterval(timer);
 
 
 
-
-
 const handleDelete=async(id)=>{
 
 
@@ -255,13 +223,13 @@ loadEvents();
 
 
 
+
 const openStatusDialog=(alert,status)=>{
 
 
 if(!canManageAlerts)
 
 return;
-
 
 
 
@@ -275,6 +243,8 @@ setStatusDialog(true);
 
 
 };
+
+
 
 
 
@@ -312,8 +282,6 @@ return;
 
 
 
-
-
 await updateEventStatus(
 
 selectedAlert.id,
@@ -332,7 +300,6 @@ resolved_by:user?.email || "SYSTEM"
 
 
 
-
 setStatusDialog(false);
 
 
@@ -348,84 +315,6 @@ loadEvents();
 
 
 
-
-
-
-const cameras=[
-
-"ALL",
-
-...new Set(
-
-alerts.map(a=>a.camera_name).filter(Boolean)
-
-)
-
-];
-
-
-
-const models=[
-
-"ALL",
-
-...new Set(
-
-alerts.map(a=>a.model_name).filter(Boolean)
-
-)
-
-];
-
-
-
-
-
-
-
-
-
-const filteredAlerts=alerts.filter(a=>{
-
-
-const date=a.created_at?.split("T")[0];
-
-const time=a.created_at?.split("T")[1]?.slice(0,5);
-
-
-
-return(
-
-(filters.camera==="ALL" || a.camera_name===filters.camera)
-
-&&
-
-(filters.model==="ALL" || a.model_name===filters.model)
-
-&&
-
-(filters.status==="ALL" || (a.status||"ACTIVE")===filters.status)
-
-&&
-
-(!filters.fromDate || date>=filters.fromDate)
-
-&&
-
-(!filters.toDate || date<=filters.toDate)
-
-&&
-
-(!filters.fromTime || time>=filters.fromTime)
-
-&&
-
-(!filters.toTime || time<=filters.toTime)
-
-);
-
-
-});
 
 return(
 
@@ -447,9 +336,6 @@ color:"white"
 
 
 
-
-
-{/* HEADER */}
 
 <Typography
 
@@ -477,7 +363,6 @@ canManageAlerts
 
 
 
-
 <Typography
 
 color="#94a3b8"
@@ -497,8 +382,6 @@ Live AI Detection Alerts
 
 
 
-
-{/* TABLE */}
 
 <Paper
 
@@ -563,7 +446,6 @@ sx={head}
 
 </TableCell>
 
-
 ))
 
 
@@ -582,15 +464,13 @@ sx={head}
 
 
 
-
 <TableBody>
 
 
 {
 
 
-filteredAlerts.map(alert=>{
-
+alerts.map(alert=>{
 
 
 const date=alert.created_at?.split("T")[0];
@@ -641,7 +521,6 @@ return(
 
 
 
-
 <TableCell sx={cell}>
 
 {Math.round(alert.confidence*100)}%
@@ -652,10 +531,6 @@ return(
 
 
 
-
-
-
-{/* EVIDENCE BUTTON */}
 
 
 <TableCell>
@@ -682,9 +557,6 @@ onClick={()=>setSelectedEvent(alert)}
 
 
 
-
-
-{/* STATUS */}
 
 
 <TableCell>
@@ -718,7 +590,6 @@ e.target.value
 
 
 {
-
 
 [
 
@@ -754,8 +625,6 @@ value={s}
 
 
 </TableCell>
-
-
 
 
 
@@ -833,9 +702,6 @@ onClick={()=>handleDelete(alert.id)}
 
 
 
-{/* PAGINATION */}
-
-
 <TablePagination
 
 component="div"
@@ -876,7 +742,8 @@ color:"white"
 
 
 
-{/* ALERT DETAILS POPUP */}
+{/* IMAGE POPUP */}
+
 
 <Dialog
 
@@ -934,7 +801,6 @@ Camera : {selectedEvent.camera_name}
 
 
 
-
 <Typography>
 
 Model : {selectedEvent.model_name}
@@ -951,7 +817,6 @@ Detection : {selectedEvent.label}
 
 
 
-
 <Typography>
 
 Confidence : {Math.round(selectedEvent.confidence*100)}%
@@ -964,9 +829,6 @@ Confidence : {Math.round(selectedEvent.confidence*100)}%
 
 
 
-
-
-{/* IMAGE DISPLAY */}
 
 
 {
@@ -989,15 +851,13 @@ selectedEvent.image_path
 
 src={
 
-`http://localhost:8000/${
+`/${
 
-selectedEvent.image_path.replaceAll(
+selectedEvent.image_path
 
-"\\",
+.replaceAll("\\","/")
 
-"/"
-
-)
+.replace(/^\/+/,"")
 
 }`
 
@@ -1005,8 +865,19 @@ selectedEvent.image_path.replaceAll(
 
 alt="Evidence"
 
-onError={(e)=>{
 
+onLoad={()=>{
+
+console.log(
+
+"Evidence loaded"
+
+)
+
+}}
+
+
+onError={(e)=>{
 
 console.log(
 
@@ -1014,10 +885,10 @@ console.log(
 
 e.target.src
 
-);
-
+)
 
 }}
+
 
 style={{
 
@@ -1027,7 +898,9 @@ maxHeight:"500px",
 
 objectFit:"contain",
 
-borderRadius:"12px"
+borderRadius:"12px",
+
+background:"#020617"
 
 }}
 
@@ -1041,13 +914,7 @@ borderRadius:"12px"
 :
 
 
-<Typography
-
-color="#f97316"
-
-mt={2}
-
->
+<Typography color="#f97316" mt={2}>
 
 No Evidence Image Available
 
@@ -1056,42 +923,6 @@ No Evidence Image Available
 
 }
 
-
-
-
-
-
-
-
-
-<Divider sx={{my:2,borderColor:"#334155"}}/>
-
-
-
-
-<Typography>
-
-Status : {selectedEvent.status}
-
-</Typography>
-
-
-
-
-<Typography>
-
-Resolved By : {selectedEvent.resolved_by || "-"}
-
-</Typography>
-
-
-
-
-<Typography>
-
-Remarks : {selectedEvent.resolution_note || "-"}
-
-</Typography>
 
 
 
@@ -1117,9 +948,6 @@ Remarks : {selectedEvent.resolution_note || "-"}
 
 
 
-{/* STATUS POPUP */}
-
-
 <Dialog
 
 open={statusDialog}
@@ -1134,7 +962,6 @@ onClose={()=>setStatusDialog(false)}
 Update Alert Status
 
 </DialogTitle>
-
 
 
 
@@ -1163,7 +990,6 @@ onChange={(e)=>setNote(e.target.value)}
 
 
 
-
 <DialogActions>
 
 
@@ -1172,7 +998,6 @@ onChange={(e)=>setNote(e.target.value)}
 Cancel
 
 </Button>
-
 
 
 <Button
@@ -1196,13 +1021,13 @@ Update
 
 
 
-
 </Box>
 
 );
 
 
 }
+
 
 
 
@@ -1222,13 +1047,11 @@ fontWeight:700
 
 
 
-
 const cell={
 
 color:"white"
 
 };
-
 
 
 
@@ -1244,29 +1067,6 @@ borderRadius:"8px",
 "& svg":{
 
 color:"white"
-
-}
-
-};
-
-
-
-
-const inputStyle={
-
-background:"#1e293b",
-
-borderRadius:"8px",
-
-"& input":{
-
-color:"white"
-
-},
-
-"& label":{
-
-color:"#cbd5e1"
 
 }
 

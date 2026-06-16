@@ -1,11 +1,8 @@
 import os
 
-
 import cv2
 
-
 import logging
-
 
 from datetime import datetime
 
@@ -13,9 +10,7 @@ from datetime import datetime
 
 from app.events.models import Event
 
-
 from app.core.config import settings
-
 
 
 
@@ -41,9 +36,9 @@ logger = logging.getLogger(
 
 
 
+
 # ----------------------------------
 # Create AI Detection Event
-# Called from AI stream
 # ----------------------------------
 
 def create_event(
@@ -69,9 +64,21 @@ def create_event(
 ):
 
 
+    logger.info(
+
+        "🔥 CREATE EVENT CALLED"
+
+    )
+
+
+
+
+
+
+
 
     # ------------------------------
-    # Handle detection dictionary
+    # Read Detection Result
     # ------------------------------
 
     if detection:
@@ -103,16 +110,6 @@ def create_event(
 
 
 
-        image_path = detection.get(
-
-            "image_path",
-
-            image_path
-
-        )
-
-
-
 
 
 
@@ -120,7 +117,7 @@ def create_event(
 
 
     # ------------------------------
-    # Save Evidence Image From Frame
+    # Save Evidence Image
     # ------------------------------
 
     if frame is not None:
@@ -137,7 +134,21 @@ def create_event(
 
 
 
+
+
+
+        # Dynamic folder:
+        #
+        # Dev:
+        # backend/storage/evidence
+        #
+        # Installed:
+        # user selected folder/evidence
+
+
         folder = settings.EVIDENCE_PATH
+
+
 
 
 
@@ -150,7 +161,6 @@ def create_event(
             exist_ok=True
 
         )
-
 
 
 
@@ -189,8 +199,6 @@ def create_event(
 
 
 
-
-
         save_path = os.path.join(
 
             folder,
@@ -198,8 +206,6 @@ def create_event(
             filename
 
         )
-
-
 
 
 
@@ -226,20 +232,26 @@ def create_event(
 
 
 
-
         logger.info(
 
-            f"IMAGE PATH: {save_path}"
+            f"EVIDENCE FOLDER: {folder}"
 
         )
 
 
+        logger.info(
+
+            f"IMAGE SAVED PATH: {save_path}"
+
+        )
+
 
         logger.info(
 
-            f"IMAGE SAVED: {saved}"
+            f"SAVED STATUS: {saved}"
 
         )
+
 
 
 
@@ -252,13 +264,31 @@ def create_event(
         if saved:
 
 
+            # IMPORTANT:
+            #
+            # Database stores URL path
+            # not Windows file path
+
+
             image_path = (
 
-                "storage/evidence/"
+                "evidence/"
 
                 +
 
                 filename
+
+            )
+
+
+
+
+        else:
+
+
+            logger.error(
+
+                "❌ Evidence image save failed"
 
             )
 
@@ -272,61 +302,36 @@ def create_event(
 
 
 
-
-
     # ------------------------------
-    # Save Event In Database
+    # Save Event
     # ------------------------------
 
-    event = Event(
-
-
-        camera_id=camera_id,
-
-
-        model_id=model_id,
-
-
-        event_type=event_type,
-
-
-        confidence=confidence,
-
-
-        image_path=image_path,
-
-
-        status="ACTIVE"
-
-
-    )
+    try:
 
 
 
+        event = Event(
 
 
+            camera_id=camera_id,
 
 
+            model_id=model_id,
 
 
-
-    db.add(
-
-        event
-
-    )
+            event_type=event_type,
 
 
-
-    db.commit()
-
+            confidence=confidence,
 
 
-    db.refresh(
+            image_path=image_path,
 
-        event
 
-    )
+            status="ACTIVE"
+
+
+        )
 
 
 
@@ -336,7 +341,66 @@ def create_event(
 
 
 
-    return event
+        db.add(
+
+            event
+
+        )
+
+
+
+        db.commit()
+
+
+
+
+
+        db.refresh(
+
+            event
+
+        )
+
+
+
+
+
+
+
+
+        logger.info(
+
+            f"✅ EVENT CREATED ID: {event.id}"
+
+        )
+
+
+
+        return event
+
+
+
+
+
+
+
+    except Exception as e:
+
+
+
+        db.rollback()
+
+
+
+        logger.exception(
+
+            f"❌ EVENT SAVE FAILED: {e}"
+
+        )
+
+
+
+        return None
 
 
 
@@ -353,7 +417,7 @@ def create_event(
 
 
 # ----------------------------------
-# Pagination for Alerts Page
+# Get Events With Pagination
 # ----------------------------------
 
 def get_events_paginated(
@@ -365,7 +429,6 @@ def get_events_paginated(
     limit:int = 20
 
 ):
-
 
 
 
@@ -382,12 +445,17 @@ def get_events_paginated(
 
 
 
+    total = (
 
-    total = db.query(
+        db.query(
 
-        Event
+            Event
 
-    ).count()
+        )
+
+        .count()
+
+    )
 
 
 
@@ -440,24 +508,22 @@ def get_events_paginated(
 
 
 
-
     return {
 
 
-        "total":total,
+        "total": total,
 
 
-        "page":page,
+        "page": page,
 
 
-        "limit":limit,
+        "limit": limit,
 
 
-        "data":events
+        "data": events
 
 
     }
-
 
 
 
@@ -484,7 +550,6 @@ def delete_event_by_id(
     event_id
 
 ):
-
 
 
 
@@ -515,16 +580,10 @@ def delete_event_by_id(
 
 
 
-
-
-
     if not event:
 
 
         return False
-
-
-
 
 
 
@@ -542,9 +601,7 @@ def delete_event_by_id(
 
 
 
-
     db.commit()
-
 
 
 

@@ -18,55 +18,38 @@ from pydantic_settings import (
 
 
 
-
-
-
-
 # ----------------------------------
 # Resolve Base Directory
 #
-# Works for:
-# 1. Development
-# 2. PyInstaller EXE
+# Development + PyInstaller
 # ----------------------------------
 
 def get_base_dir():
 
 
-
     exe_path = os.getenv(
-
         "HMEL_BASE_DIR"
-
     )
-
 
 
     if exe_path:
 
 
-
         return Path(
-
             exe_path
-
         )
 
 
 
+    return (
 
+        Path(__file__)
 
+        .resolve()
 
+        .parents[2]
 
-    return Path(
-
-        __file__
-
-    ).resolve().parents[2]
-
-
-
-
+    )
 
 
 
@@ -74,6 +57,156 @@ def get_base_dir():
 
 
 BASE_DIR = get_base_dir()
+
+
+
+
+
+
+
+# ----------------------------------
+# Resolve Storage Directory
+#
+# Priority:
+# 1. Installer selected path
+#    storage_config.txt
+#
+# 2. Development fallback
+#    backend/storage
+# ----------------------------------
+
+def get_storage_dir():
+
+
+    config_file = (
+
+        BASE_DIR
+
+        /
+
+        "storage_config.txt"
+
+    )
+
+
+
+    if config_file.exists():
+
+
+        storage_path = (
+
+            config_file
+
+            .read_text()
+
+            .strip()
+
+        )
+
+
+
+        if storage_path:
+
+
+            return Path(
+
+                storage_path
+
+            )
+
+
+
+
+
+
+    return (
+
+        BASE_DIR
+
+        /
+
+        "storage"
+
+    )
+
+
+
+
+
+
+
+
+
+STORAGE_DIR = get_storage_dir()
+
+
+
+MODEL_DIR = (
+
+    STORAGE_DIR
+
+    /
+
+    "models"
+
+)
+
+
+
+EVIDENCE_DIR = (
+
+    STORAGE_DIR
+
+    /
+
+    "evidence"
+
+)
+
+
+
+EVENT_DIR = (
+
+    STORAGE_DIR
+
+    /
+
+    "events"
+
+)
+
+
+
+
+
+
+
+
+
+# ----------------------------------
+# Create Storage Folders
+# ----------------------------------
+
+for folder in [
+
+    STORAGE_DIR,
+
+    MODEL_DIR,
+
+    EVIDENCE_DIR,
+
+    EVENT_DIR
+
+]:
+
+
+    folder.mkdir(
+
+        parents=True,
+
+        exist_ok=True
+
+    )
 
 
 
@@ -172,18 +305,40 @@ class Settings(BaseSettings):
 
     # ------------------------------
     # STORAGE
+    #
+    # Generated dynamically
+    # DO NOT put in .env
     # ------------------------------
 
-    STORAGE_PATH: str = "storage"
+    STORAGE_PATH: str = str(
+
+        STORAGE_DIR
+
+    )
 
 
 
-    MODEL_PATH: str = "storage/models"
+    MODEL_PATH: str = str(
+
+        MODEL_DIR
+
+    )
 
 
 
-    EVIDENCE_PATH: str = "storage/evidence"
+    EVIDENCE_PATH: str = str(
 
+        EVIDENCE_DIR
+
+    )
+
+
+
+    EVENT_PATH: str = str(
+
+        EVENT_DIR
+
+    )
 
 
 
@@ -218,9 +373,8 @@ class Settings(BaseSettings):
 
 
 
-
     # ------------------------------
-    # Pydantic v2 config
+    # Pydantic v2 Config
     # ------------------------------
 
     model_config = SettingsConfigDict(
@@ -247,8 +401,6 @@ class Settings(BaseSettings):
 
 
 
-
-
 # ----------------------------------
 # Cached Settings
 # ----------------------------------
@@ -258,13 +410,7 @@ class Settings(BaseSettings):
 def get_settings():
 
 
-
     return Settings()
-
-
-
-
-
 
 
 

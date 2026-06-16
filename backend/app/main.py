@@ -71,7 +71,7 @@ logging.basicConfig(
 
 
 
-logger=logging.getLogger(
+logger = logging.getLogger(
 
     __name__
 
@@ -111,13 +111,11 @@ from app.events import models as event_models
 
 
 
-
 # ----------------------------------
 # Seed
 # ----------------------------------
 
 from app.permissions.service import seed_permissions
-
 
 
 
@@ -161,7 +159,7 @@ from app.setup.router import router as setup_router
 
 
 # ----------------------------------
-# Background Services
+# Background Service
 # ----------------------------------
 
 from app.cameras.monitor import camera_monitor
@@ -179,45 +177,41 @@ from app.cameras.monitor import camera_monitor
 # Paths
 # ----------------------------------
 
-BASE_DIR = Path(
+BASE_DIR = (
 
-    __file__
+    Path(__file__)
 
-).resolve().parent.parent
+    .resolve()
+
+    .parent
+
+    .parent
+
+)
 
 
 
 
 
-STORAGE_DIR = (
 
-    BASE_DIR
+# Already handled in config.py
+# DO NOT add BASE_DIR here
 
-    /
+STORAGE_DIR = Path(
 
     settings.STORAGE_PATH
 
 )
 
 
-
-MODEL_DIR = (
-
-    BASE_DIR
-
-    /
+MODEL_DIR = Path(
 
     settings.MODEL_PATH
 
 )
 
 
-
-EVIDENCE_DIR = (
-
-    BASE_DIR
-
-    /
+EVIDENCE_DIR = Path(
 
     settings.EVIDENCE_PATH
 
@@ -244,7 +238,13 @@ FRONTEND_DIR = (
 
 
 
-MODEL_DIR.mkdir(
+
+
+# ----------------------------------
+# Create Folders
+# ----------------------------------
+
+STORAGE_DIR.mkdir(
 
     parents=True,
 
@@ -252,6 +252,14 @@ MODEL_DIR.mkdir(
 
 )
 
+
+MODEL_DIR.mkdir(
+
+    parents=True,
+
+    exist_ok=True
+
+)
 
 
 EVIDENCE_DIR.mkdir(
@@ -275,7 +283,7 @@ EVIDENCE_DIR.mkdir(
 # Seed Database
 # ----------------------------------
 
-db=SessionLocal()
+db = SessionLocal()
 
 
 try:
@@ -306,7 +314,9 @@ finally:
 # Startup / Shutdown
 # ----------------------------------
 
-monitor_task=None
+monitor_task = None
+
+
 
 
 
@@ -317,13 +327,12 @@ monitor_task=None
 @asynccontextmanager
 async def lifespan(
 
-    app:FastAPI
+    app: FastAPI
 
 ):
 
 
     global monitor_task
-
 
 
 
@@ -344,10 +353,27 @@ async def lifespan(
 
 
 
+    logger.info(
+
+        f"Storage Path: {STORAGE_DIR}"
+
+    )
 
 
 
-    monitor_task=asyncio.create_task(
+    logger.info(
+
+        f"Evidence Path: {EVIDENCE_DIR}"
+
+    )
+
+
+
+
+
+
+
+    monitor_task = asyncio.create_task(
 
         camera_monitor()
 
@@ -377,12 +403,13 @@ async def lifespan(
 
 
 
+
+
     logger.info(
 
         "🛑 Backend shutting down"
 
     )
-
 
 
 
@@ -402,12 +429,11 @@ async def lifespan(
 
 
 
-
 # ----------------------------------
-# FastAPI APP
+# FastAPI App
 # ----------------------------------
 
-app=FastAPI(
+app = FastAPI(
 
     title=settings.APP_NAME,
 
@@ -418,6 +444,7 @@ app=FastAPI(
     lifespan=lifespan
 
 )
+
 
 
 
@@ -471,10 +498,10 @@ app.add_middleware(
 
 
 # ----------------------------------
-# Register API Routers
+# Register Routers
 # ----------------------------------
 
-routers=[
+routers = [
 
     auth_router,
 
@@ -520,8 +547,11 @@ for router in routers:
 
 
 
+
 # ----------------------------------
-# Storage Files
+# Storage Static Files
+#
+# /storage/...
 # ----------------------------------
 
 app.mount(
@@ -531,7 +561,7 @@ app.mount(
 
     StaticFiles(
 
-        directory=STORAGE_DIR
+        directory=str(STORAGE_DIR)
 
     ),
 
@@ -550,7 +580,39 @@ app.mount(
 
 
 # ----------------------------------
-# Model Files
+# Evidence Static Files
+#
+# /evidence/image.jpg
+# ----------------------------------
+
+app.mount(
+
+    "/evidence",
+
+
+    StaticFiles(
+
+        directory=str(EVIDENCE_DIR)
+
+    ),
+
+
+    name="evidence"
+
+)
+
+
+
+
+
+
+
+
+
+
+
+# ----------------------------------
+# AI Model Files
 # ----------------------------------
 
 app.mount(
@@ -560,7 +622,7 @@ app.mount(
 
     StaticFiles(
 
-        directory=MODEL_DIR
+        directory=str(MODEL_DIR)
 
     ),
 
@@ -611,7 +673,7 @@ if FRONTEND_DIR.exists():
 
 
 # ----------------------------------
-# API Health
+# Health Check
 # ----------------------------------
 
 @app.get("/api/health")
@@ -620,9 +682,9 @@ def health():
 
     return {
 
-        "status":"running",
+        "status": "running",
 
-        "environment":settings.ENVIRONMENT
+        "environment": settings.ENVIRONMENT
 
     }
 
@@ -636,18 +698,18 @@ def health():
 
 
 # ----------------------------------
-# Database Test
+# DB Test
 # ----------------------------------
 
 @app.get("/db-test")
 def test_database(
 
-    db:Session=Depends(get_db)
+    db: Session = Depends(get_db)
 
 ):
 
 
-    result=db.execute(
+    result = db.execute(
 
         text(
 
@@ -661,9 +723,9 @@ def test_database(
 
     return {
 
-        "database":"connected",
+        "database": "connected",
 
-        "result":result.scalar()
+        "result": result.scalar()
 
     }
 
@@ -684,7 +746,7 @@ def test_database(
 def frontend():
 
 
-    index_file=(
+    index_file = (
 
         FRONTEND_DIR
 
@@ -693,6 +755,7 @@ def frontend():
         "index.html"
 
     )
+
 
 
     if index_file.exists():
@@ -705,11 +768,13 @@ def frontend():
         )
 
 
+
     return {
 
-        "error":"frontend missing"
+        "error": "frontend missing"
 
     }
+
 
 
 
@@ -727,12 +792,12 @@ def frontend():
 @app.get("/{full_path:path}")
 def react_routes(
 
-    full_path:str
+    full_path: str
 
 ):
 
 
-    index_file=(
+    index_file = (
 
         FRONTEND_DIR
 
@@ -757,6 +822,6 @@ def react_routes(
 
     return {
 
-        "error":"frontend missing"
+        "error": "frontend missing"
 
     }

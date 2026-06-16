@@ -1,7 +1,12 @@
+from pathlib import Path
+
+
 from ultralytics import YOLO
 
 
 import logging
+
+
 
 
 
@@ -25,8 +30,10 @@ logger = logging.getLogger(
 
 
 
+
 # ----------------------------------
-# Loaded AI Models Cache
+# Loaded Models Cache
+# path -> YOLO object
 # ----------------------------------
 
 loaded_models = {}
@@ -40,7 +47,7 @@ loaded_models = {}
 
 
 # ----------------------------------
-# Load Model Once
+# Load YOLO Model Once
 # ----------------------------------
 
 def get_model(
@@ -51,15 +58,62 @@ def get_model(
 
 
 
+    model_path = str(
+
+        Path(
+
+            model_path
+
+        ).resolve()
+
+    )
+
+
+
+
+
+
+
+    # ------------------------------
+    # Check model exists
+    # ------------------------------
+
+    if not Path(
+
+        model_path
+
+    ).exists():
+
+
+
+        raise FileNotFoundError(
+
+            f"AI model missing: {model_path}"
+
+        )
+
+
+
+
+
+
+
+
+
+    # ------------------------------
+    # Load only first time
+    # ------------------------------
+
     if model_path not in loaded_models:
 
 
 
         logger.info(
 
-            f"Loading AI model: {model_path}"
+            f"Loading AI model once: {model_path}"
 
         )
+
 
 
 
@@ -72,6 +126,7 @@ def get_model(
             model_path
 
         )
+
 
 
 
@@ -96,7 +151,7 @@ def get_model(
 
 
 # ----------------------------------
-# Run Detection
+# Run Object Detection
 # ----------------------------------
 
 def detect_objects(
@@ -120,15 +175,16 @@ def detect_objects(
 
 
 
-    # ----------------------------------
-    # YOLO inference
-    # verbose=False removes frame logs
-    # ----------------------------------
+
+
+
+    # ------------------------------
+    # YOLO Inference
+    # ------------------------------
 
     results = model(
 
         frame,
-
 
         verbose=False
 
@@ -152,12 +208,17 @@ def detect_objects(
 
 
 
+    # ------------------------------
+    # Parse Results
+    # ------------------------------
+
     for result in results:
 
 
 
 
         for box in result.boxes:
+
 
 
 
@@ -173,13 +234,11 @@ def detect_objects(
 
 
 
-
             confidence = float(
 
                 box.conf[0]
 
             )
-
 
 
 
@@ -199,16 +258,18 @@ def detect_objects(
 
 
 
+
+
             detections.append(
 
 
                 {
 
 
-                    "label":label,
+                    "label": label,
 
 
-                    "confidence":round(
+                    "confidence": round(
 
                         confidence,
 
@@ -221,7 +282,6 @@ def detect_objects(
 
 
             )
-
 
 
 

@@ -45,7 +45,6 @@ class Event(Base):
 
 
 
-
     # -------------------------
     # Event ID
     # -------------------------
@@ -98,19 +97,25 @@ class Event(Base):
 
     # -------------------------
     # AI Model
+    #
+    # Model can be deleted,
+    # alerts remain as history
     # -------------------------
 
     model_id = Column(
 
         ForeignKey(
 
-            "ai_models.id"
+            "ai_models.id",
+
+            ondelete="SET NULL"
 
         ),
 
-        nullable=False
+        nullable=True
 
     )
+
 
 
 
@@ -152,6 +157,7 @@ class Event(Base):
 
 
 
+
     # -------------------------
     # Evidence Snapshot
     # -------------------------
@@ -172,8 +178,10 @@ class Event(Base):
 
 
 
+
     # -------------------------
     # Alert Status
+    #
     # ACTIVE
     # RESOLVED
     # FALSE ALARM
@@ -198,8 +206,9 @@ class Event(Base):
 
 
 
+
     # -------------------------
-    # Admin Resolution Details
+    # Resolution Details
     # -------------------------
 
     resolution_note = Column(
@@ -209,7 +218,6 @@ class Event(Base):
         nullable=True
 
     )
-
 
 
 
@@ -223,7 +231,6 @@ class Event(Base):
 
 
 
-
     resolved_at = Column(
 
         DateTime(timezone=True),
@@ -231,6 +238,8 @@ class Event(Base):
         nullable=True
 
     )
+
+
 
 
 
@@ -262,6 +271,7 @@ class Event(Base):
 
 
 
+
     # -------------------------
     # Relationships
     # -------------------------
@@ -277,6 +287,8 @@ class Event(Base):
 
     ai_model = relationship(
 
-        "AIModel"
+        "AIModel",
+
+        passive_deletes=True
 
     )
