@@ -2,9 +2,7 @@
 # AUTO GENERATED CONFIG
 # ==================================
 
-DATABASE_URL=postgresql://hmel_service:rbIc8c4os6c0eYKuMgqXqWop@localhost:5432/hmel_cv
-
-
+DATABASE_URL=DATABASE_URL=postgresql://postgres:password@localhost:5432/hmel_cv
 SECRET_KEY=5c1dd2be487e277db9829fb5046d8ad2af8bbd952b72272ca5146fbdc12e5b1b
 
 
