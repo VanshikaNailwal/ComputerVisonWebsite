@@ -1,7 +1,5 @@
 import os
 import sys
-import secrets
-import string
 
 from pathlib import Path
 
@@ -12,17 +10,12 @@ from psycopg2.extensions import (
 )
 
 from alembic.config import Config
-
 from alembic import command
-
-
 
 
 
 # ----------------------------------
 # Detect Base Directory
-#
-# Development + PyInstaller
 # ----------------------------------
 
 if getattr(sys, "frozen", False):
@@ -31,26 +24,27 @@ if getattr(sys, "frozen", False):
         sys._MEIPASS
     )
 
+    RESOURCE_DIR = BASE_DIR
+
 
 elif os.getenv("HMEL_BASE_DIR"):
 
     BASE_DIR = Path(
-        os.getenv(
-            "HMEL_BASE_DIR"
-        )
+        os.getenv("HMEL_BASE_DIR")
     )
+
+    RESOURCE_DIR = BASE_DIR
 
 
 else:
 
     BASE_DIR = (
-
         Path(__file__)
         .resolve()
         .parents[1]
-
     )
 
+    RESOURCE_DIR = BASE_DIR
 
 
 
@@ -63,11 +57,7 @@ else:
 DB_NAME = "hmel_cv"
 
 
-DB_USER = "hmel_service"
-
-
-
-POSTGRES_ADMIN = "postgres"
+DB_USER = "postgres"
 
 
 POSTGRES_PASSWORD = "14232517"
@@ -81,55 +71,6 @@ POSTGRES_PORT = 5432
 
 
 
-ENV_FILE = (
-
-    BASE_DIR
-
-    /
-
-    ".env"
-
-)
-
-
-
-
-
-
-
-# ----------------------------------
-# Generate Database Password
-# ----------------------------------
-
-def generate_password():
-
-
-    chars = (
-
-        string.ascii_letters
-
-        +
-
-        string.digits
-
-    )
-
-
-    return "".join(
-
-        secrets.choice(chars)
-
-        for _ in range(24)
-
-    )
-
-
-
-
-
-
-
-
 
 # ----------------------------------
 # Setup Database
@@ -139,28 +80,15 @@ def setup_database():
 
 
     print(
-        "🚀 Setting up HMEL database..."
+        "🚀 Setting up VisionX database..."
     )
 
-
-    db_password = generate_password()
-
-
-
-
-
-
-
-
-    # ------------------------------
-    # Connect postgres admin
-    # ------------------------------
 
     conn = psycopg2.connect(
 
         dbname="postgres",
 
-        user=POSTGRES_ADMIN,
+        user=DB_USER,
 
         password=POSTGRES_PASSWORD,
 
@@ -171,81 +99,12 @@ def setup_database():
     )
 
 
-
     conn.set_isolation_level(
-
         ISOLATION_LEVEL_AUTOCOMMIT
-
     )
-
 
 
     cursor = conn.cursor()
-
-
-
-
-
-
-
-
-    # ------------------------------
-    # Create / Update Service User
-    # ------------------------------
-
-    cursor.execute(
-
-        f"""
-        DO $$
-
-        BEGIN
-
-
-            IF NOT EXISTS (
-
-                SELECT FROM pg_catalog.pg_roles
-
-                WHERE rolname='{DB_USER}'
-
-            )
-
-            THEN
-
-
-                CREATE ROLE {DB_USER}
-
-                LOGIN PASSWORD '{db_password}';
-
-
-            ELSE
-
-
-                ALTER ROLE {DB_USER}
-
-                WITH PASSWORD '{db_password}';
-
-
-            END IF;
-
-
-        END
-
-        $$;
-        """
-
-    )
-
-
-
-
-    print(
-        "✅ Database user configured"
-    )
-
-
-
-
-
 
 
 
@@ -258,9 +117,7 @@ def setup_database():
 
         f"""
         SELECT 1
-
         FROM pg_database
-
         WHERE datname='{DB_NAME}';
         """
 
@@ -272,16 +129,13 @@ def setup_database():
 
 
 
-
     if not exists:
 
 
         cursor.execute(
 
             f"""
-            CREATE DATABASE {DB_NAME}
-
-            OWNER {DB_USER};
+            CREATE DATABASE {DB_NAME};
             """
 
         )
@@ -302,8 +156,6 @@ def setup_database():
 
 
 
-
-
     cursor.close()
 
     conn.close()
@@ -312,106 +164,22 @@ def setup_database():
 
 
 
-
-
-
-
     # ------------------------------
-    # Generate Production .env
-    # ------------------------------
-
-    database_url = (
-
-        f"postgresql://{DB_USER}:{db_password}"
-
-        f"@localhost:5432/{DB_NAME}"
-
-    )
-
-
-
-
-
-    ENV_FILE.write_text(
-
-f"""
-# ==================================
-# AUTO GENERATED CONFIG
-# ==================================
-
-DATABASE_URL={database_url}
-
-
-SECRET_KEY={secrets.token_hex(32)}
-
-
-ALGORITHM=HS256
-
-
-ACCESS_TOKEN_EXPIRE_MINUTES=60
-
-
-
-APP_NAME=HMEL Vision Platform
-
-
-ENVIRONMENT=production
-
-
-
-
-CONFIDENCE_THRESHOLD=0.4
-
-
-FRAME_SKIP=5
-
-
-ALERT_COOLDOWN=20
-
-"""
-
-    )
-
-
-
-
-    print(
-        "✅ Production .env generated"
-    )
-
-
-
-
-
-
-
-
-
-
-    # ------------------------------
-    # Run Alembic Migration
+    # Run Alembic
     # ------------------------------
 
     os.environ[
-
         "HMEL_BASE_DIR"
-
     ] = str(
-
         BASE_DIR
-
     )
-
-
 
 
 
     alembic_ini = (
 
-        BASE_DIR
-
+        RESOURCE_DIR
         /
-
         "alembic.ini"
 
     )
@@ -420,29 +188,22 @@ ALERT_COOLDOWN=20
 
     migration_path = (
 
-        BASE_DIR
-
+        RESOURCE_DIR
         /
-
         "migrations"
 
     )
 
 
 
-
-
     print(
-        f"📂 Alembic config: {alembic_ini}"
+        f"📂 Alembic: {alembic_ini}"
     )
 
 
-
     print(
-        f"📂 Migration folder: {migration_path}"
+        f"📂 Migrations: {migration_path}"
     )
-
-
 
 
 
@@ -459,7 +220,6 @@ ALERT_COOLDOWN=20
 
 
 
-
     if not migration_path.exists():
 
 
@@ -468,8 +228,6 @@ ALERT_COOLDOWN=20
             f"Migration folder missing: {migration_path}"
 
         )
-
-
 
 
 
@@ -483,7 +241,6 @@ ALERT_COOLDOWN=20
 
 
 
-
     alembic_cfg.set_main_option(
 
         "script_location",
@@ -491,8 +248,6 @@ ALERT_COOLDOWN=20
         str(migration_path)
 
     )
-
-
 
 
 
@@ -509,12 +264,8 @@ ALERT_COOLDOWN=20
 
 
     print(
-        "🎉 HMEL database setup completed"
+        "🎉 VisionX database setup completed"
     )
-
-
-
-
 
 
 

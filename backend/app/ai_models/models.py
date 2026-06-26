@@ -12,12 +12,10 @@ from app.database import Base
 
 
 
-
 class AIModel(Base):
 
 
     __tablename__ = "ai_models"
-
 
 
 
@@ -31,8 +29,6 @@ class AIModel(Base):
         index=True
 
     )
-
-
 
 
 
@@ -71,8 +67,6 @@ class AIModel(Base):
 
 
 
-
-
     version = Column(
 
         String,
@@ -89,7 +83,7 @@ class AIModel(Base):
 
 
     # ----------------------------------
-    # Stored File Info
+    # YOLO MODEL FILE (.pt)
     # ----------------------------------
 
     filename = Column(
@@ -105,13 +99,43 @@ class AIModel(Base):
 
 
 
-
-
     file_path = Column(
 
         String,
 
         nullable=False
+
+    )
+
+
+
+
+
+
+
+
+    # ----------------------------------
+    # LOGIC FILE (.py)
+    # ----------------------------------
+
+    logic_filename = Column(
+
+        String,
+
+        nullable=True
+
+    )
+
+
+
+
+
+
+    logic_path = Column(
+
+        String,
+
+        nullable=True
 
     )
 

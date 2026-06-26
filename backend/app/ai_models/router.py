@@ -56,14 +56,8 @@ router = APIRouter(
 
 
 
-
-
 # ----------------------------------
-# Dynamic Model Directory
-#
-# Comes from:
-# storage_config.txt
-# selected during install
+# Model Storage Directory
 # ----------------------------------
 
 MODEL_DIR = Path(
@@ -71,7 +65,6 @@ MODEL_DIR = Path(
     settings.MODEL_PATH
 
 )
-
 
 
 MODEL_DIR.mkdir(
@@ -92,7 +85,7 @@ MODEL_DIR.mkdir(
 
 
 # ----------------------------------
-# Upload AI Model
+# Upload AI Model + Logic File
 # ----------------------------------
 
 @router.post("/upload")
@@ -111,6 +104,9 @@ async def upload_model(
     file: UploadFile = File(...),
 
 
+    logic_file: UploadFile = File(...),
+
+
     db: Session = Depends(get_db)
 
 
@@ -118,9 +114,8 @@ async def upload_model(
 
 
 
-
     # ------------------------------
-    # Validate extension
+    # Validate YOLO file
     # ------------------------------
 
     if not file.filename.endswith(".pt"):
@@ -140,10 +135,32 @@ async def upload_model(
 
 
 
+    # ------------------------------
+    # Validate logic file
+    # ------------------------------
+
+    if not logic_file.filename.endswith(".py"):
+
+
+        raise HTTPException(
+
+            status_code=400,
+
+            detail="Only .py logic files allowed"
+
+        )
+
+
+
+
+
+
+
+
 
 
     # ------------------------------
-    # Duplicate check
+    # Duplicate model check
     # ------------------------------
 
     existing = (
@@ -154,19 +171,15 @@ async def upload_model(
 
         )
 
-
         .filter(
 
             AIModel.filename == file.filename
 
         )
 
-
         .first()
 
     )
-
-
 
 
 
@@ -191,10 +204,10 @@ async def upload_model(
 
 
     # ------------------------------
-    # Save Model File
+    # Save .pt file
     # ------------------------------
 
-    save_path = (
+    model_save_path = (
 
         MODEL_DIR
 
@@ -206,16 +219,13 @@ async def upload_model(
 
 
 
-
-
     with open(
 
-        save_path,
+        model_save_path,
 
         "wb"
 
     ) as buffer:
-
 
 
         shutil.copyfileobj(
@@ -235,7 +245,48 @@ async def upload_model(
 
 
     # ------------------------------
-    # Create DB Entry
+    # Save .py logic file
+    # ------------------------------
+
+    logic_save_path = (
+
+        MODEL_DIR
+
+        /
+
+        logic_file.filename
+
+    )
+
+
+
+    with open(
+
+        logic_save_path,
+
+        "wb"
+
+    ) as buffer:
+
+
+        shutil.copyfileobj(
+
+            logic_file.file,
+
+            buffer
+
+        )
+
+
+
+
+
+
+
+
+
+    # ------------------------------
+    # Database Entry
     # ------------------------------
 
     new_model = AIModel(
@@ -253,14 +304,16 @@ async def upload_model(
         filename=file.filename,
 
 
-        # only store filename
-        # not absolute path
-
         file_path=file.filename,
 
 
-        status="CHECKING"
+        logic_filename=logic_file.filename,
 
+
+        logic_path=logic_file.filename,
+
+
+        status="CHECKING"
 
     )
 
@@ -294,9 +347,8 @@ async def upload_model(
 
 
 
-
     # ------------------------------
-    # Validate YOLO Model
+    # Validate YOLO model
     # ------------------------------
 
     try:
@@ -304,12 +356,13 @@ async def upload_model(
 
         YOLO(
 
-            str(save_path)
+            str(model_save_path)
 
         )
 
 
-        new_model.status = "READY"
+
+        new_model.status="READY"
 
 
 
@@ -317,8 +370,7 @@ async def upload_model(
     except Exception:
 
 
-        new_model.status = "FAILED"
-
+        new_model.status="FAILED"
 
 
 
@@ -346,29 +398,34 @@ async def upload_model(
     return {
 
 
-        "message": "Model uploaded successfully",
+        "message":"Model uploaded successfully",
 
 
-        "id": new_model.id,
+        "id":new_model.id,
 
 
-        "name": new_model.name,
+        "name":new_model.name,
 
 
-        "usecase": new_model.usecase,
+        "usecase":new_model.usecase,
 
 
-        "version": new_model.version,
+        "version":new_model.version,
 
 
-        "filename": new_model.filename,
+        "filename":new_model.filename,
 
 
-        "path": new_model.file_path,
+        "path":new_model.file_path,
 
 
-        "status": new_model.status
+        "logic_filename":new_model.logic_filename,
 
+
+        "logic_path":new_model.logic_path,
+
+
+        "status":new_model.status
 
     }
 
@@ -385,7 +442,7 @@ async def upload_model(
 
 
 # ----------------------------------
-# Get All AI Models
+# Get All Models
 # ----------------------------------
 
 @router.get("")
@@ -415,33 +472,37 @@ def get_models(
 
 
 
-
-
     return [
 
 
         {
 
 
-            "id": model.id,
+            "id":model.id,
 
 
-            "name": model.name,
+            "name":model.name,
 
 
-            "usecase": model.usecase,
+            "usecase":model.usecase,
 
 
-            "version": model.version,
+            "version":model.version,
 
 
-            "filename": model.filename,
+            "filename":model.filename,
 
 
-            "path": model.file_path,
+            "path":model.file_path,
 
 
-            "status": model.status
+            "logic_filename":model.logic_filename,
+
+
+            "logic_path":model.logic_path,
+
+
+            "status":model.status
 
 
         }
@@ -463,7 +524,6 @@ def get_models(
 
 
 
-
 # ----------------------------------
 # Delete AI Model
 # ----------------------------------
@@ -472,7 +532,7 @@ def get_models(
 def delete_model(
 
 
-    model_id: int,
+    model_id:int,
 
 
     db: Session = Depends(get_db)
@@ -491,18 +551,15 @@ def delete_model(
 
         )
 
-
         .filter(
 
             AIModel.id == model_id
 
         )
 
-
         .first()
 
     )
-
 
 
 
@@ -528,11 +585,10 @@ def delete_model(
 
 
 
+
+
     # ------------------------------
-    # Remove model references
-    # from existing alerts
-    #
-    # Keeps evidence history
+    # Remove alert references
     # ------------------------------
 
     db.query(
@@ -547,7 +603,7 @@ def delete_model(
 
         {
 
-            Event.model_id: None
+            Event.model_id:None
 
         }
 
@@ -563,10 +619,10 @@ def delete_model(
 
 
     # ------------------------------
-    # Delete physical .pt file
+    # Delete .pt file
     # ------------------------------
 
-    file_path = (
+    model_file = (
 
         MODEL_DIR
 
@@ -578,12 +634,10 @@ def delete_model(
 
 
 
+    if model_file.exists():
 
-    if file_path.exists():
 
-
-        file_path.unlink()
-
+        model_file.unlink()
 
 
 
@@ -594,8 +648,37 @@ def delete_model(
 
 
     # ------------------------------
-    # Delete database row
+    # Delete .py logic file
     # ------------------------------
+
+    if model.logic_filename:
+
+
+        logic_file = (
+
+            MODEL_DIR
+
+            /
+
+            model.logic_filename
+
+        )
+
+
+
+        if logic_file.exists():
+
+
+            logic_file.unlink()
+
+
+
+
+
+
+
+
+
 
     db.delete(
 
@@ -614,11 +697,10 @@ def delete_model(
 
 
 
-
     return {
 
 
-        "message": "Model deleted successfully"
+        "message":"Model deleted successfully"
 
 
     }

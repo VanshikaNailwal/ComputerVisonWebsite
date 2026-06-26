@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 
-
 import {
-
     Box,
     Typography,
     Paper,
@@ -19,82 +17,40 @@ import {
     DialogActions,
     TextField,
     IconButton
-
 } from "@mui/material";
 
 
-
 import {
-
     Add,
     Delete,
     UploadFile
-
 } from "@mui/icons-material";
 
 
-
 import api from "../api/axios";
-
-
 import { useAuth } from "../context/AuthContext";
-
-
-
-
-
-
 
 
 
 function Models(){
 
 
-
 const {user}=useAuth();
 
 
-
-
-// ===============================
-// PERMISSION CHECK
-// ===============================
-
 const canManageModels =
-
-user?.is_super_admin
-
-||
-
-user?.permissions?.includes(
-
-"manage_models"
-
-);
-
-
-
-
-
-
-
-
+user?.is_super_admin ||
+user?.permissions?.includes("manage_models");
 
 
 
 const [models,setModels] = useState([]);
 
-
 const [open,setOpen] = useState(false);
-
 
 const [error,setError] = useState("");
 
-
 const [loading,setLoading] = useState(false);
-
-
-
 
 
 
@@ -106,7 +62,9 @@ usecase:"",
 
 version:"",
 
-file:null
+file:null,
+
+logicFile:null
 
 });
 
@@ -115,15 +73,7 @@ file:null
 
 
 
-
-
-
-
-
-
-// ----------------------------------
-// Load Models
-// ----------------------------------
+// LOAD MODELS
 
 const loadModels = async()=>{
 
@@ -131,40 +81,22 @@ const loadModels = async()=>{
 try{
 
 
-const res = await api.get(
-
-"/models"
-
-);
+const res = await api.get("/models");
 
 
-
-setModels(
-
-res.data
-
-);
-
+setModels(res.data);
 
 
 }
 
 catch(err){
 
-
 console.log(err);
-
 
 }
 
 
 };
-
-
-
-
-
-
 
 
 
@@ -186,13 +118,9 @@ loadModels();
 
 
 
-
-// ----------------------------------
-// Upload Model
-// ----------------------------------
+// UPLOAD MODEL + LOGIC
 
 const uploadModel = async()=>{
-
 
 
 if(!canManageModels)
@@ -201,94 +129,73 @@ return;
 
 
 
-
-
-
 try{
 
 
 setError("");
-
 
 setLoading(true);
 
 
 
 
-
-
 if(!form.name.trim()){
 
-
-setError("Model name required");
-
+setError("Usecase name required");
 
 setLoading(false);
 
-
 return;
 
-
 }
-
-
 
 
 
 if(!form.usecase.trim()){
 
-
 setError("Usecase required");
-
 
 setLoading(false);
 
-
 return;
 
-
 }
-
-
-
 
 
 
 if(!form.version.trim()){
 
-
 setError("Version required");
-
 
 setLoading(false);
 
-
 return;
 
-
 }
-
-
-
-
 
 
 
 if(!form.file){
 
-
 setError("Select model file");
-
 
 setLoading(false);
 
-
 return;
-
 
 }
 
 
+
+if(!form.logicFile){
+
+setError("Select logic file");
+
+setLoading(false);
+
+return;
+
+}
 
 
 
@@ -300,48 +207,38 @@ const data = new FormData();
 
 
 
-
 data.append(
-
 "name",
-
 form.name
-
 );
 
 
 
 data.append(
-
 "usecase",
-
 form.usecase
-
 );
 
 
 
 data.append(
-
 "version",
-
 form.version
-
 );
 
 
 
 data.append(
-
 "file",
-
 form.file
-
 );
 
 
 
-
+data.append(
+"logic_file",
+form.logicFile
+);
 
 
 
@@ -372,11 +269,7 @@ headers:{
 
 
 
-
-
-
 setOpen(false);
-
 
 
 
@@ -388,18 +281,16 @@ usecase:"",
 
 version:"",
 
-file:null
+file:null,
+
+logicFile:null
 
 });
 
 
 
 
-
-
-
 loadModels();
-
 
 
 
@@ -413,14 +304,11 @@ const detail = err.response?.data?.detail;
 
 
 
-
 if(Array.isArray(detail)){
 
 
 setError(
-
 detail[0]?.msg || "Upload failed"
-
 );
 
 
@@ -429,15 +317,10 @@ detail[0]?.msg || "Upload failed"
 else{
 
 
-setError(
-
-detail || "Upload failed"
-
-);
+setError(detail || "Upload failed");
 
 
 }
-
 
 
 }
@@ -451,7 +334,6 @@ setLoading(false);
 }
 
 
-
 };
 
 
@@ -463,13 +345,9 @@ setLoading(false);
 
 
 
-
-// ----------------------------------
-// Delete Model
-// ----------------------------------
+// DELETE MODEL
 
 const deleteModel = async(id)=>{
-
 
 
 if(!canManageModels)
@@ -478,21 +356,9 @@ return;
 
 
 
-
-
-const confirmDelete=window.confirm(
-
-"Delete this AI model?"
-
-);
-
-
-
-if(!confirmDelete)
+if(!window.confirm("Delete this AI usecase?"))
 
 return;
-
-
 
 
 
@@ -500,17 +366,10 @@ return;
 try{
 
 
-await api.delete(
-
-`/models/${id}`
-
-);
-
-
+await api.delete(`/models/${id}`);
 
 
 loadModels();
-
 
 
 }
@@ -524,7 +383,6 @@ console.log(err);
 }
 
 
-
 };
 
 
@@ -535,40 +393,25 @@ console.log(err);
 
 
 
-
-
-// ----------------------------------
-// Status Color
-// ----------------------------------
-
 const statusColor=(status)=>{
 
 
-
-if(status==="READY"){
+if(status==="READY")
 
 return "#16a34a";
 
-}
 
 
-
-if(status==="FAILED"){
+if(status==="FAILED")
 
 return "#dc2626";
-
-}
 
 
 
 return "#f97316";
 
 
-
 };
-
-
-
 
 
 
@@ -601,11 +444,6 @@ color:"white"
 
 
 
-
-
-
-
-
 <Box
 
 display="flex"
@@ -631,21 +469,18 @@ fontWeight={900}
 
 >
 
-AI Model Management
+AI Use Case Management
 
 </Typography>
-
 
 
 
 
 <Typography color="#94a3b8">
 
-Upload and monitor AI models
+Upload models with custom processing logic
 
 </Typography>
-
-
 
 
 </Box>
@@ -654,12 +489,7 @@ Upload and monitor AI models
 
 
 
-
-
-
-
 {
-
 
 canManageModels &&
 
@@ -674,7 +504,7 @@ sx={orangeBtn}
 
 >
 
-Upload Model
+Create Use Case
 
 </Button>
 
@@ -683,17 +513,7 @@ Upload Model
 
 
 
-
 </Box>
-
-
-
-
-
-
-
-
-
 
 
 
@@ -713,36 +533,26 @@ overflow:"hidden"
 
 >
 
-
-
 <Table>
 
 
 <TableHead>
 
-
 <TableRow>
-
 
 
 {
 
 [
-
 "Model",
-
 "Usecase",
-
 "Version",
-
-"File",
-
+"Model File",
+"Logic File",
 "Status",
-
-...(canManageModels?["Actions"]:[])
+...(canManageModels ? ["Actions"] : [])
 
 ].map(h=>(
-
 
 
 <TableCell
@@ -758,23 +568,14 @@ sx={head}
 </TableCell>
 
 
-
 ))
 
 }
 
 
-
 </TableRow>
 
-
 </TableHead>
-
-
-
-
-
-
 
 
 
@@ -784,12 +585,9 @@ sx={head}
 <TableBody>
 
 
-
 {
 
-
 models.map(model=>(
-
 
 
 <TableRow key={model.id}>
@@ -806,7 +604,6 @@ models.map(model=>(
 
 
 
-
 <TableCell sx={cell}>
 
 {model.usecase}
@@ -817,14 +614,11 @@ models.map(model=>(
 
 
 
-
 <TableCell sx={cell}>
 
 v{model.version}
 
 </TableCell>
-
-
 
 
 
@@ -841,10 +635,19 @@ v{model.version}
 
 
 
+<TableCell sx={cell}>
+
+{model.logic_filename || "No Logic File"}
+
+</TableCell>
+
+
+
+
+
 
 
 <TableCell>
-
 
 
 <Chip
@@ -862,12 +665,7 @@ color:"white"
 />
 
 
-
 </TableCell>
-
-
-
-
 
 
 
@@ -877,12 +675,10 @@ color:"white"
 
 {
 
-
 canManageModels &&
 
 
 <TableCell>
-
 
 
 <IconButton
@@ -898,7 +694,6 @@ onClick={()=>deleteModel(model.id)}
 </IconButton>
 
 
-
 </TableCell>
 
 
@@ -906,17 +701,12 @@ onClick={()=>deleteModel(model.id)}
 
 
 
-
-
 </TableRow>
-
 
 
 ))
 
-
 }
-
 
 
 </TableBody>
@@ -937,11 +727,7 @@ onClick={()=>deleteModel(model.id)}
 
 
 
-
-
-
-{/* UPLOAD MODEL */}
-
+{/* CREATE USECASE POPUP */}
 
 
 <Dialog
@@ -967,13 +753,11 @@ width:500
 >
 
 
-
 <DialogTitle>
 
-Upload AI Model
+Create AI Use Case
 
 </DialogTitle>
-
 
 
 
@@ -987,14 +771,13 @@ Upload AI Model
 
 
 
-
 <TextField
 
 fullWidth
 
 margin="dense"
 
-label="Model Name"
+label="Use Case Name"
 
 value={form.name}
 
@@ -1019,15 +802,13 @@ name:e.target.value
 
 
 
-
-
 <TextField
 
 fullWidth
 
 margin="dense"
 
-label="Usecase"
+label="Usecase Type"
 
 value={form.usecase}
 
@@ -1046,7 +827,6 @@ usecase:e.target.value
 }
 
 />
-
 
 
 
@@ -1089,7 +869,6 @@ version:e.target.value
 
 
 
-
 <Button
 
 component="label"
@@ -1106,7 +885,8 @@ color:"#38bdf8"
 
 >
 
-Select Model File
+
+Select Model File (.pt)
 
 
 
@@ -1140,14 +920,9 @@ file:e.target.files[0]
 
 
 
-
-
-
-
 {
 
 form.file &&
-
 
 <Typography>
 
@@ -1155,10 +930,84 @@ form.file &&
 
 </Typography>
 
-
 }
 
 
+
+
+
+
+
+
+
+<Button
+
+component="label"
+
+startIcon={<UploadFile/>}
+
+sx={{
+
+mt:2,
+
+ml:2,
+
+color:"#22c55e"
+
+}}
+
+>
+
+
+Select Logic File (.py)
+
+
+
+<input
+
+hidden
+
+type="file"
+
+accept=".py"
+
+onChange={(e)=>
+
+setForm({
+
+...form,
+
+logicFile:e.target.files[0]
+
+})
+
+}
+
+/>
+
+
+
+</Button>
+
+
+
+
+
+
+
+{
+
+form.logicFile &&
+
+
+<Typography>
+
+{form.logicFile.name}
+
+</Typography>
+
+
+}
 
 
 
@@ -1182,6 +1031,7 @@ error &&
 
 
 
+
 </DialogContent>
 
 
@@ -1190,10 +1040,7 @@ error &&
 
 
 
-
-
 <DialogActions>
-
 
 
 <Button
@@ -1210,6 +1057,7 @@ Cancel
 
 
 
+
 <Button
 
 disabled={loading}
@@ -1220,19 +1068,19 @@ sx={orangeBtn}
 
 >
 
+
 {
 
-loading
+loading ?
 
-?
-
-"Checking..."
+"Uploading..."
 
 :
 
 "Upload"
 
 }
+
 
 </Button>
 
@@ -1241,11 +1089,7 @@ loading
 </DialogActions>
 
 
-
 </Dialog>
-
-
-
 
 
 
@@ -1255,11 +1099,7 @@ loading
 
 );
 
-
 }
-
-
-
 
 
 
@@ -1288,7 +1128,6 @@ borderColor:"#1f2937"
 
 
 
-
 const cell={
 
 color:"white",
@@ -1296,7 +1135,6 @@ color:"white",
 borderColor:"#1f2937"
 
 };
-
 
 
 
@@ -1314,11 +1152,13 @@ color:"#94a3b8"
 },
 
 
+
 "& input":{
 
 color:"white"
 
 },
+
 
 
 "& fieldset":{
@@ -1353,8 +1193,6 @@ background:"#ea580c"
 }
 
 };
-
-
 
 
 
