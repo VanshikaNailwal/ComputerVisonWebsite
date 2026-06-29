@@ -1,11 +1,6 @@
-import os
-
 from pathlib import Path
 
 from pydantic_settings import BaseSettings
-
-
-
 
 
 # ----------------------------------
@@ -13,20 +8,10 @@ from pydantic_settings import BaseSettings
 # ----------------------------------
 
 BASE_DIR = (
-
     Path(__file__)
-
     .resolve()
-
     .parents[2]
-
 )
-
-
-
-
-
-
 
 
 # ----------------------------------
@@ -42,64 +27,26 @@ BASE_DIR = (
 
 def get_storage_dir():
 
-
     config_file = (
-
         BASE_DIR
-
-        /
-
-        "storage_config.txt"
-
+        / "storage_config.txt"
     )
-
-
 
     if config_file.exists():
 
-
         storage_path = (
-
             config_file
-
             .read_text()
-
             .strip()
-
         )
 
-
-
         if storage_path:
-
-
-            return Path(
-
-                storage_path
-
-            )
-
-
-
-
-
+            return Path(storage_path)
 
     return (
-
         BASE_DIR
-
-        /
-
-        "storage"
-
+        / "storage"
     )
-
-
-
-
-
-
-
 
 
 # ----------------------------------
@@ -108,51 +55,35 @@ def get_storage_dir():
 
 STORAGE_DIR = get_storage_dir()
 
-
-print("🔥 STORAGE USED:", STORAGE_DIR)
-print("🔥 MODEL PATH:", MODEL_DIR)
-print("🔥 EVIDENCE PATH:", EVIDENCE_DIR)
-print("🔥 EVENT PATH:", EVENT_DIR)
-
 MODEL_DIR = (
-
     STORAGE_DIR
-
-    /
-
-    "models"
-
+    / "models"
 )
-
 
 EVIDENCE_DIR = (
-
     STORAGE_DIR
-
-    /
-
-    "evidence"
-
+    / "evidence"
 )
-
 
 EVENT_DIR = (
-
     STORAGE_DIR
-
-    /
-
-    "events"
-
+    / "events"
 )
 
 
+# ----------------------------------
+# Debug Paths (Optional)
+# ----------------------------------
+
+print("🔥 STORAGE USED :", STORAGE_DIR)
+print("🔥 MODEL PATH   :", MODEL_DIR)
+print("🔥 EVIDENCE PATH:", EVIDENCE_DIR)
+print("🔥 EVENT PATH   :", EVENT_DIR)
 
 
-
-
-
-# create folders automatically
+# ----------------------------------
+# Create Storage Folders
+# ----------------------------------
 
 for folder in [
 
@@ -166,22 +97,10 @@ for folder in [
 
 ]:
 
-
     folder.mkdir(
-
         parents=True,
-
         exist_ok=True
-
     )
-
-
-
-
-
-
-
-
 
 
 # ----------------------------------
@@ -189,96 +108,58 @@ for folder in [
 # ----------------------------------
 
 class Settings(BaseSettings):
-
     """
     Application configuration class.
 
     Loads:
-    - database settings from .env
-    - storage path from installer config
+    - Database settings from .env
+    - Storage path from installer config
     """
 
-
-
-    # DATABASE
+    # ------------------------------
+    # Database
+    # ------------------------------
 
     DATABASE_URL: str
 
-
-
-
-
-    # SECURITY
+    # ------------------------------
+    # Security
+    # ------------------------------
 
     SECRET_KEY: str
 
-
     ALGORITHM: str = "HS256"
-
 
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 
-
-
-
-
-
-
-    # STORAGE
+    # ------------------------------
+    # Storage
+    # ------------------------------
 
     STORAGE_PATH: str = str(
-
         STORAGE_DIR
-
     )
-
 
     MODEL_PATH: str = str(
-
         MODEL_DIR
-
     )
-
 
     EVIDENCE_PATH: str = str(
-
         EVIDENCE_DIR
-
     )
-
 
     EVENT_PATH: str = str(
-
         EVENT_DIR
-
     )
-
-
-
-
-
-
 
     class Config:
 
         env_file = (
-
             BASE_DIR
-
-            /
-
-            ".env"
-
+            / ".env"
         )
 
-
         extra = "ignore"
-
-
-
-
-
-
 
 
 settings = Settings()
