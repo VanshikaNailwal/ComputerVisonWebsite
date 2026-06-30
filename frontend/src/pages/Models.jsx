@@ -64,7 +64,6 @@ version:"",
 
 file:null,
 
-logicFile:null
 
 });
 
@@ -187,15 +186,7 @@ return;
 
 
 
-if(!form.logicFile){
 
-setError("Select logic file");
-
-setLoading(false);
-
-return;
-
-}
 
 
 
@@ -232,16 +223,6 @@ data.append(
 "file",
 form.file
 );
-
-
-
-data.append(
-"logic_file",
-form.logicFile
-);
-
-
-
 
 
 
@@ -283,7 +264,6 @@ version:"",
 
 file:null,
 
-logicFile:null
 
 });
 
@@ -478,7 +458,7 @@ AI Use Case Management
 
 <Typography color="#94a3b8">
 
-Upload models with custom processing logic
+Upload AI models
 
 </Typography>
 
@@ -548,7 +528,6 @@ overflow:"hidden"
 "Usecase",
 "Version",
 "Model File",
-"Logic File",
 "Status",
 ...(canManageModels ? ["Actions"] : [])
 
@@ -629,18 +608,6 @@ v{model.version}
 {model.filename}
 
 </TableCell>
-
-
-
-
-
-
-<TableCell sx={cell}>
-
-{model.logic_filename || "No Logic File"}
-
-</TableCell>
-
 
 
 
